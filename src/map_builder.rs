@@ -1,0 +1,104 @@
+use crate::prelude::*;
+const NUM_ROOMS: usize = 15;
+
+pub struct MapBuilder {
+    pub map: Map,
+    pub rooms: Vec<Rect>,
+    pub player_start: Point,
+}
+
+impl MapBuilder {
+    pub fn new(rng: &mut RandomNumberGenerator) -> Self {
+        let mut map_builder = MapBuilder {
+            map: Map::new(),
+            rooms: Vec::new(),
+            player_start: Point::zero(),
+        };
+        // fill the map with walls
+        map_builder.fill(TileType::Wall);
+        // carve out random rooms
+        map_builder.build_random_rooms(rng);
+        // connect the rooms
+        map_builder.build_corridors(rng);
+        // select the first room and set the starting point at it's center.
+        map_builder.player_start = map_builder.rooms[0].center();
+        map_builder
+    }
+
+    fn fill(&mut self, tile: TileType) {
+        self.map.tiles.iter_mut().for_each(|t| *t = tile);
+    }
+
+    fn build_random_rooms(&mut self, rng: &mut RandomNumberGenerator) {
+        while self.rooms.len() < NUM_ROOMS {
+            // Generate a room of random size and position
+            let room = Rect::with_size(
+                rng.range(1, SCREEN_WIDTH - 10),
+                rng.range(1, SCREEN_HEIGHT - 10),
+                rng.range(5, 15),
+                rng.range(5, 15),
+            );
+            // check if this new room overlaps with any current rooms
+            let mut overlap = false;
+            for r in self.rooms.iter() {
+                if r.intersect(&room) {
+                    overlap = true;
+                }
+            }
+            // if this room doesn't overlap add it to the rooms
+            if !overlap {
+                // for each cell of this room iter, and change the tile type to floor
+                // in the map within it's bounds
+                room.for_each(|p| {
+                    if p.x > 0 && p.x < SCREEN_WIDTH && p.y > 0 && p.y < SCREEN_HEIGHT {
+                        let idx = map_idx(p.x, p.y);
+                        self.map.tiles[idx] = TileType::Floor;
+                    }
+                });
+                self.rooms.push(room);
+            }
+        }
+    }
+
+    fn apply_vertical_tunnel(&mut self, y1: i32, y2: i32, x: i32) {
+        use std::cmp::{max, min};
+        for y in min(y1, y2)..=max(y1, y2) {
+            if let Some(idx) = self.map.try_idx(Point::new(x, y)) {
+                self.map.tiles[idx as usize] = TileType::Floor;
+            }
+        }
+    }
+
+    fn apply_horizontal_tunnel(&mut self, x1: i32, x2: i32, y: i32) {
+        use std::cmp::{max, min};
+        for x in min(x1, x2)..=max(x1, x2) {
+            if let Some(idx) = self.map.try_idx(Point::new(x, y)) {
+                self.map.tiles[idx as usize] = TileType::Floor;
+            }
+        }
+    }
+
+    fn build_corridors(&mut self, rng: &mut RandomNumberGenerator) {
+        let mut rooms = self.rooms.clone();
+        // Sort the rooms by center x position
+        // This reduces the length of corridors we will need to create
+        rooms.sort_by(|a, b| a.center().x.cmp(&b.center().x));
+
+        // Iterate through the rooms, skipping the first room
+        // If we don't skip the first the ref to prev will be invalid..
+        for (i, room) in rooms.iter().enumerate().skip(1) {
+            // Get the center of the next and previous rooms
+            // this is why we skip the first room..
+            let prev = rooms[i - 1].center();
+            let new = room.center();
+            // Randomly dig corridors between the two center points in the rooms
+            if rng.range(0, 2) == 1 {
+                self.apply_horizontal_tunnel(prev.x, new.x, prev.y);
+                self.apply_vertical_tunnel(prev.y, new.y, new.x);
+            } else {
+                self.apply_vertical_tunnel(prev.y, new.y, prev.x);
+                self.apply_horizontal_tunnel(prev.x, new.x, new.y);
+            }
+        }
+    }
+}
