@@ -9,7 +9,7 @@ impl Player {
         Self { position }
     }
 
-    pub fn update(&mut self, ctx: &mut BTerm, map: &Map) {
+    pub fn update(&mut self, ctx: &mut BTerm, map: &Map, camera: &mut Camera) {
         if let Some(key) = ctx.key {
             // Create a delta point direction based on keypress
             let delta = match key {
@@ -24,14 +24,19 @@ impl Player {
             // if the location is valid, set the current position to new_position
             if map.can_enter_tile(new_position) {
                 self.position = new_position;
+                // Move the camera to the new player position
+                camera.on_player_move(new_position);
             }
         }
     }
 
-    pub fn render(&self, ctx: &mut BTerm) {
+    pub fn render(&self, ctx: &mut BTerm, camera: &Camera) {
+        // Set to object rendering layer
+        ctx.set_active_console(1);
+        // Render player in relation to the camera
         ctx.set(
-            self.position.x,
-            self.position.y,
+            self.position.x - camera.left_x,
+            self.position.y - camera.top_y,
             WHITE,
             BLACK,
             to_cp437('@'),
