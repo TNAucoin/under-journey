@@ -69,7 +69,7 @@ impl Map {
                             x - camera.left_x,
                             y - camera.top_y,
                             WHITE,
-                            BLACK,
+                            GREY10,
                             to_cp437('#'),
                         ),
                     }

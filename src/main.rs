@@ -24,9 +24,9 @@ mod prelude {
 
 use prelude::*;
 
-pub const TILESET_NAME: &str = "tileset.jpg";
-pub const TILE_WIDTH: i32 = 32;
-pub const TILE_HEIGHT: i32 = 32;
+pub const TILESET_NAME: &str = "Zesty_curses_12x12.png";
+pub const TILE_WIDTH: i32 = 12;
+pub const TILE_HEIGHT: i32 = 12;
 
 //Holds our global game state
 struct State {
@@ -44,6 +44,14 @@ impl State {
         let map_builder = MapBuilder::new(&mut rng);
         //Spawn the player in the world
         spawn_player(&mut ecs, map_builder.player_start);
+        // Randomly spawn monsters
+        // Skip the starting room the player is placed in.
+        map_builder
+            .rooms
+            .iter()
+            .skip(1)
+            .map(|room| room.center())
+            .for_each(|pos| spawn_monster(&mut ecs, &mut rng, pos));
         resources.insert(map_builder.map);
         resources.insert(Camera::new(map_builder.player_start));
         Self {
