@@ -11,10 +11,14 @@ pub fn map_render(#[resource] map: &Map, #[resource] camera: &Camera) {
             if map.in_bounds(pt) {
                 let idx = map_idx(x, y);
                 let glyph = match map.tiles[idx] {
-                    TileType::Floor => to_cp437('.'),
+                    TileType::Floor => to_cp437(' '),
                     TileType::Wall => to_cp437('#'),
                 };
-                draw_batch.set(pt - offset, ColorPair::new(WHITE, BLACK), glyph);
+                let color = match map.tiles[idx] {
+                    TileType::Floor => ColorPair::new(WHITE, GREY20),
+                    TileType::Wall => ColorPair::new(WHITE, GREY50),
+                };
+                draw_batch.set(pt - offset, color, glyph);
             }
         }
     }
