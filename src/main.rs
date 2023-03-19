@@ -80,6 +80,7 @@ impl GameState for State {
         // Store keyboard state as a resource in our systems
         self.resources.insert(ctx.key);
         let current_state = self.resources.get::<TurnState>().unwrap().clone();
+        // Only execute the needed systems for the current turn state type
         match current_state {
             TurnState::AwaitingInput => self
                 .input_systems
