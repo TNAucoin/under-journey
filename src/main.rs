@@ -26,9 +26,9 @@ mod prelude {
 
 use prelude::*;
 
-pub const TILESET_NAME: &str = "Zesty_curses_12x12.png";
-pub const TILE_WIDTH: i32 = 12;
-pub const TILE_HEIGHT: i32 = 12;
+pub const TILESET_NAME: &str = "tileset.jpg";
+pub const TILE_WIDTH: i32 = 32;
+pub const TILE_HEIGHT: i32 = 32;
 
 //Holds our global game state
 struct State {
@@ -77,8 +77,15 @@ impl GameState for State {
         ctx.cls();
         ctx.set_active_console(1);
         ctx.cls();
+        ctx.set_active_console(2);
+        ctx.cls();
         // Store keyboard state as a resource in our systems
         self.resources.insert(ctx.key);
+        // Mouse position as a resource in our systems.
+        // Switch to background layer before fetching mouse coords
+        // This effects the coordinate scaling
+        ctx.set_active_console(0);
+        self.resources.insert(Point::from_tuple(ctx.mouse_pos()));
         let current_state = self.resources.get::<TurnState>().unwrap().clone();
         // Only execute the needed systems for the current turn state type
         match current_state {
@@ -105,8 +112,10 @@ fn main() -> BError {
         .with_tile_dimensions(TILE_WIDTH, TILE_HEIGHT)
         .with_resource_path("resources/")
         .with_font(TILESET_NAME, TILE_WIDTH, TILE_HEIGHT)
+        .with_font("terminal8x8.png", 8, 8)
         .with_simple_console(DISPLAY_WIDTH, DISPLAY_HEIGHT, TILESET_NAME)
         .with_simple_console_no_bg(DISPLAY_WIDTH, DISPLAY_HEIGHT, TILESET_NAME)
+        .with_simple_console_no_bg(SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, "terminal8x8.png")
         .build()?;
     // Run the game
     main_loop(context, State::new())
